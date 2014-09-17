@@ -152,7 +152,7 @@ public class MainActivity extends Activity {
 		@Override
 		protected Bitmap doInBackground(Void... arg0) {
 			// If want to search weather, need to do: 
-			// QueryYahooWoeidAPIs(uriPlace), QueryYahooWeather(), convertStringToDocument(weatherString), getWeatherInfo(weatherDoc)
+			// QueryYahooWoeidAPIs(uriPlace), QueryYahooWoeid(), convertStringToDocument(weatherString), getWeatherInfo(weatherDoc)
 			String uriPlace = Uri.encode(mCity + " " + mState);
 			searchWoeidResult = queryYahooWoeidAPIs(uriPlace);
 			weatherString = queryYahooWeather();
@@ -204,7 +204,7 @@ public class MainActivity extends Activity {
 
 	private String queryYahooWoeidAPIs(String uriPlace) {
 		yahooWoeidAPIsQuery = yahooPlaceApisBase + "%22" + uriPlace + "%22" + yahooapisFormat;
-		String woeidString = queryYahooWeather(yahooWoeidAPIsQuery);
+		String woeidString = queryYahooWoeid(yahooWoeidAPIsQuery);
 		Document woeidDoc = convertStringToDocument(woeidString);
 		return parseWoeid(woeidDoc);
 	}
@@ -239,7 +239,7 @@ public class MainActivity extends Activity {
 		return woeidDoc;
 	}
 
-	private String queryYahooWeather(String woeidResult) {
+	private String queryYahooWoeid(String woeidResult) {
 		String queryResult = "";
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpGet = new HttpGet(woeidResult);
