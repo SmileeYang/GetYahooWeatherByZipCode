@@ -79,8 +79,7 @@ public class MainActivity extends Activity {
 	public void onResume() {
 		mTypingZip.setText("");
 		isSearchSuccess = false;
-		Log.d(TAG, "onResume, isRecorded=" + isRecorded + ", isSearchSuccess="
-				+ isSearchSuccess);
+		Log.d(TAG, "onResume, isRecorded=" + isRecorded + ", isSearchSuccess=" + isSearchSuccess);
 		super.onResume();
 	}
 
@@ -93,9 +92,7 @@ public class MainActivity extends Activity {
 		@Override
 		public void onClick(View arg0) {
 			mZipCode = mTypingZip.getText().toString();
-			Log.d(TAG, "mZipCode=" + mZipCode + ", mCurrentTyping="
-					+ mCurrentTyping);
-
+			Log.d(TAG, "mZipCode=" + mZipCode + ", mCurrentTyping=" + mCurrentTyping);
 			while (mZipCode.length() > 2 && mZipCode.length() < 5) {
 				String isThree = "00";
 				String isFour = "0";
@@ -107,16 +104,12 @@ public class MainActivity extends Activity {
 					Log.d(TAG, "Now mZipCode=" + mZipCode);
 				}
 			}
-
 			if (mZipCode.equals("")) {
-				Toast.makeText(getBaseContext(), "Please enter zip code!",
-						Toast.LENGTH_SHORT).show();
+				Toast.makeText(getBaseContext(), "Please enter zip code!", Toast.LENGTH_SHORT).show();
 			} else if (mZipCode.length() < 3) {
-				Toast.makeText(getBaseContext(), "Your zip code is too short!",
-						Toast.LENGTH_SHORT).show();
+				Toast.makeText(getBaseContext(), "Your zip code is too short!", Toast.LENGTH_SHORT).show();
 			} else {
-				ArrayList<ZipCodeTimeZone> locationList = mZipCodeDBHelper
-						.getZipData(MainActivity.this, mZipCode);
+				ArrayList<ZipCodeTimeZone> locationList = mZipCodeDBHelper.getZipData(MainActivity.this, mZipCode);
 				Log.d(TAG, "getZipCodeData()");
 				if (locationList != null && !locationList.isEmpty()) {
 					mCurrTimeStamp = System.currentTimeMillis();
@@ -146,7 +139,6 @@ public class MainActivity extends Activity {
 						Log.d(TAG, "---equals---mTimeGap=" + mTimeGap);
 						Log.d(TAG, "mCity=" + mCity + " mTemperature=" + mTemperature + " mHumidity=" + mHumidity + " mCondition=" + mCondition);
 					}
-
 				} else {
 					Toast.makeText(MainActivity.this, "No such zip code, please try again!", Toast.LENGTH_SHORT).show();
 					mTypingZip.setText("");
@@ -162,13 +154,11 @@ public class MainActivity extends Activity {
 			// If want to search weather, need to do: 
 			// QueryYahooWoeidAPIs(uriPlace), QueryYahooWeather(), convertStringToDocument(weatherString), getWeatherInfo(weatherDoc)
 			String uriPlace = Uri.encode(mCity + " " + mState);
-			searchWoeidResult = QueryYahooWoeidAPIs(uriPlace);
-			weatherString = QueryYahooWeather();
-
-			Document weatherDoc = convertStringToDocument(weatherString);
-
-			if (weatherDoc != null) {
-				ArrayList<WeatherInfo> resultList = getWeatherInfo(weatherDoc);
+			searchWoeidResult = queryYahooWoeidAPIs(uriPlace);
+			weatherString = queryYahooWeather();
+			Document woeidDoc = convertStringToDocument(weatherString);
+			if (woeidDoc != null) {
+				ArrayList<WeatherInfo> resultList = getWeatherInfo(woeidDoc);
 				if (resultList != null) {
 					for (WeatherInfo wi : resultList) {
 						mTemperature = wi.getTemperature();
@@ -187,7 +177,6 @@ public class MainActivity extends Activity {
 			} else {
 				Log.d(TAG, "Cannot convert String To Document!");
 			}
-
 			try { // get abc in <img src="abc">
 				String imgRegex = "<img[^>]"; // http://l.yimg.com/a/i/us/we/52/33.gif"/><br />
 				String[] tokens = weatherString.split(imgRegex);
@@ -213,38 +202,33 @@ public class MainActivity extends Activity {
 
 	}
 
-	private String QueryYahooWoeidAPIs(String uriPlace) {
+	private String queryYahooWoeidAPIs(String uriPlace) {
 		yahooWoeidAPIsQuery = yahooPlaceApisBase + "%22" + uriPlace + "%22" + yahooapisFormat;
-
-		String woeidString = QueryYahooWeather(yahooWoeidAPIsQuery);
+		String woeidString = queryYahooWeather(yahooWoeidAPIsQuery);
 		Document woeidDoc = convertStringToDocument(woeidString);
-		return parseWOEID(woeidDoc);
+		return parseWoeid(woeidDoc);
 	}
 
-	private String parseWOEID(Document srcDoc) {
-		String listWOEID = "";
-
-		NodeList nodeListDescription = srcDoc.getElementsByTagName("woeid"); // finding <woeid>
+	private String parseWoeid(Document woeidDoc) {
+		String woeidResult = "";
+		NodeList nodeListDescription = woeidDoc.getElementsByTagName("woeid"); // finding <woeid>
 		if (nodeListDescription.getLength() >= 0) {
 			for (int i = 0; i < nodeListDescription.getLength(); i++) {
-				listWOEID = (nodeListDescription.item(i).getTextContent());
+				woeidResult = (nodeListDescription.item(i).getTextContent());
 			}
 		} else {
-			return listWOEID;
+			return woeidResult;
 		}
-
-		return listWOEID;
+		return woeidResult;
 	}
 
-	private Document convertStringToDocument(String src) {
-		Document dest = null;
-
+	private Document convertStringToDocument(String woeidString) {
+		Document woeidDoc = null;
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder parser;
-
 		try {
 			parser = dbFactory.newDocumentBuilder();
-			dest = parser.parse(new ByteArrayInputStream(src.getBytes()));
+			woeidDoc = parser.parse(new ByteArrayInputStream(woeidString.getBytes()));
 		} catch (ParserConfigurationException e1) {
 			e1.printStackTrace();
 		} catch (SAXException e) {
@@ -252,65 +236,50 @@ public class MainActivity extends Activity {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		return dest;
+		return woeidDoc;
 	}
 
-	private String QueryYahooWeather(String queryString) {
-		String qResult = "";
-
+	private String queryYahooWeather(String woeidResult) {
+		String queryResult = "";
 		HttpClient httpClient = new DefaultHttpClient();
-		HttpGet httpGet = new HttpGet(queryString);
-
+		HttpGet httpGet = new HttpGet(woeidResult);
 		try {
 			HttpEntity httpEntity = httpClient.execute(httpGet).getEntity();
-
 			if (httpEntity != null) {
 				InputStream inputStream = httpEntity.getContent();
-				Reader in = new InputStreamReader(inputStream);
-				BufferedReader bufferedreader = new BufferedReader(in);
+				Reader reader = new InputStreamReader(inputStream);
+				BufferedReader bufferedReader = new BufferedReader(reader);
 				StringBuilder stringBuilder = new StringBuilder();
-
 				String stringReadLine = null;
-
-				while ((stringReadLine = bufferedreader.readLine()) != null) {
+				while ((stringReadLine = bufferedReader.readLine()) != null) {
 					stringBuilder.append(stringReadLine + "\n");
 				}
-
-				qResult = stringBuilder.toString();
+				queryResult = stringBuilder.toString();
 			}
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
-			;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		return qResult;
+		return queryResult;
 	}
 
-	private String QueryYahooWeather() {
+	private String queryYahooWeather() {
 		String qResult = "";
 		String queryString = "http://weather.yahooapis.com/forecastrss?w=" + searchWoeidResult + "&u=f";
-
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpGet = new HttpGet(queryString);
-
 		try {
 			HttpEntity httpEntity = httpClient.execute(httpGet).getEntity();
-
 			if (httpEntity != null) {
 				InputStream inputStream = httpEntity.getContent();
 				Reader in = new InputStreamReader(inputStream);
 				BufferedReader bufferedreader = new BufferedReader(in);
 				StringBuilder stringBuilder = new StringBuilder();
-
 				String stringReadLine = null;
-
 				while ((stringReadLine = bufferedreader.readLine()) != null) {
 					stringBuilder.append(stringReadLine + "\n");
 				}
-
 				qResult = stringBuilder.toString();
 			}
 		} catch (ClientProtocolException e) {
@@ -322,11 +291,8 @@ public class MainActivity extends Activity {
 	}
 
 	private ArrayList<WeatherInfo> getWeatherInfo(Document srcDoc) {
-
 		ArrayList<WeatherInfo> resultList = new ArrayList<WeatherInfo>();
-
 		WeatherInfo wi = new WeatherInfo();
-
 		NodeList conditionNodeList = srcDoc.getElementsByTagName("yweather:condition");
 		if (conditionNodeList != null && conditionNodeList.getLength() > 0) {
 			Node conditionNode = conditionNodeList.item(0);
@@ -337,7 +303,6 @@ public class MainActivity extends Activity {
 			mCondition = "EMPTY";
 			mTemperature = "EMPTY";
 		}
-
 		NodeList humidityNodeList = srcDoc.getElementsByTagName("yweather:atmosphere");
 		if (humidityNodeList != null && humidityNodeList.getLength() > 0) {
 			Node humidityNode = humidityNodeList.item(0);
@@ -346,9 +311,7 @@ public class MainActivity extends Activity {
 		} else {
 			mHumidity = "EMPTY";
 		}
-
 		resultList.add(wi);
-
 		return resultList;
 	}
 	
@@ -356,9 +319,7 @@ public class MainActivity extends Activity {
 		Bitmap bitmap = null;
 		try {
 			Log.d(TAG, "weatherIcon set");
-			bitmap = BitmapFactory.decodeStream((InputStream) new URL(
-					weatherIconUrl).getContent());
-			
+			bitmap = BitmapFactory.decodeStream((InputStream) new URL(weatherIconUrl).getContent());
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
